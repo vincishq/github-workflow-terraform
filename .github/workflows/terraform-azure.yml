@@ -1,0 +1,83 @@
+name: 'Vincis Terraform Azure'
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: false
+      working-directory:
+        type: string
+        required: false
+      use-tfplan-output:
+        type: boolean
+        required: false
+    secrets:
+      TF_STATE_STORAGE_ACCOUNT_NAME:
+        required: true
+      TF_ARM_CLIENT_ID:
+        required: true
+      TF_ARM_TENANT_ID:
+        required: false
+      
+      GH_OWNER:
+        required: false
+      GH_TOKEN:
+        required: false
+
+jobs:
+  terraform-azure:
+    name: 'Terraform Azure'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || null }}
+    env:
+      use-tfplan-output: ${{ inputs.use-tfplan-output || false }} # Default to false
+      tfplan-file-name: ${{ inputs.environment || 'tfplan' }}.tfplan
+      ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
+      ARM_CLIENT_ID: ${{ secrets.TF_ARM_CLIENT_ID }}
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+      GITHUB_OWNER: ${{ secrets.GH_OWNER }}
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory || './' }}
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Terraform setup, init, format, validate
+    # On every run
+    - name: Terraform Init
+      id: init
+      uses: vincishq/github-action-terraform-init@v1
+      with:
+        cloud-provider: "Azure"
+        backend-storage-name: ${{ secrets.TF_STATE_STORAGE_ACCOUNT_NAME }}
+    
+    # Terraform plan and optional upload artifact
+    # On pull requests where using plan output and all requests when not using plan output
+    - name: Terraform Plan
+      if: (github.event_name == 'pull_request' && env.use-tfplan-output == 'true') || env.use-tfplan-output == 'false'
+      id: plan
+      uses: vincishq/github-action-terraform-plan@v1
+      with:
+        tfplan-name: ${{ env.tfplan-file-name }}
+        output-tfplan: ${{ env.use-tfplan-output }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        init-outcome: ${{ steps.init.outputs.init-outcome }}
+
+    # Terraform apply
+    # On "main" branch
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main'
+      id: apply
+      uses: vincishq/github-action-terraform-apply@v1
+      with:
+        tfplan-name: ${{ env.tfplan-file-name }}
+        use-tfplan-artifact: ${{ env.use-tfplan-output }}
