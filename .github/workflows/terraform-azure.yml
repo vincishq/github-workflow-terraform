@@ -13,13 +13,17 @@ on:
         type: boolean
         required: false
     secrets:
+      # Azure backend state storage account name
       TF_STATE_STORAGE_ACCOUNT_NAME:
         required: true
+      
+      # OIDC service principal details
       TF_ARM_CLIENT_ID:
         required: true
       TF_ARM_TENANT_ID:
         required: false
       
+      # Optionally for use with GitHub config
       GH_OWNER:
         required: false
       GH_TOKEN:
@@ -32,11 +36,15 @@ jobs:
     environment: ${{ inputs.environment || null }}
     env:
       use-tfplan-output: ${{ inputs.use-tfplan-output || false }} # Default to false
-      tfplan-file-name: ${{ inputs.environment || 'tfplan' }}.tfplan
+      tfplan-file-name: ${{ inputs.environment || 'tfplan' }}.tfplan # Default to tfplan.tfplan
+      
+      # OIDC service principal details
       ARM_TENANT_ID: ${{ secrets.TF_ARM_TENANT_ID }}
       ARM_CLIENT_ID: ${{ secrets.TF_ARM_CLIENT_ID }}
       ARM_USE_OIDC: true
       ARM_USE_AZUREAD: true
+
+      # Optionally for use with GitHub config
       GITHUB_OWNER: ${{ secrets.GH_OWNER }}
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
