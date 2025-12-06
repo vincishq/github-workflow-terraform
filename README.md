@@ -6,9 +6,10 @@ The included workflows allow you to easily run the Terraform `init` / `fmt` / `p
 
 Currently workflows exist for the following cloud providers:
 
-| Cloud Provider | Authentication | Workflow              |
-| -------------- | -------------- | --------------------- |
-| Azure          | OIDC           | `terraform-azure.yml` |
+| Cloud Provider | Authentication | Workflow                     |
+| -------------- | -------------- | ---------------------------- |
+| Azure          | OIDC           | `terraform-azure.yml`        |
+| Digital Ocean  | Access Keys    | `terraform-digitalocean.yml` |
 
 Additionally two extra variables are included for use in all workflows to support with using Terraform for GitHub configuration, `GH_OWNER` & `GH_TOKEN`.
 

@@ -1,0 +1,104 @@
+name: 'Vincis Terraform Digital Ocean'
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: false
+      working-directory:
+        type: string
+        required: false
+      use-tfplan-output:
+        type: boolean
+        required: false
+    secrets:
+      # DO Spaces S3 backend
+      TF_STATE_S3_BUCKET_NAME:
+        required: true
+      TF_STATE_S3_ACCESS_KEY_ID:
+        required: true
+      TF_STATE_S3_SECRET_ACCESS_KEY:
+        required: true
+      
+      # DO Spaces access keys (not TF backend)
+      SPACES_ACCESS_KEY_ID:
+        required: false
+      SPACES_SECRET_ACCESS_KEY:
+        required: false
+      
+      # DO API token
+      DIGITALOCEAN_TOKEN:
+        required: false
+      
+      # Optionally for use with GitHub config
+      GH_OWNER:
+        required: false
+      GH_TOKEN:
+        required: false
+
+jobs:
+  terraform-digitalocean:
+    name: 'Terraform Digital Ocean'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || null }}
+    env:
+      use-tfplan-output: ${{ inputs.use-tfplan-output || false }} # Default to false
+      tfplan-file-name: ${{ inputs.environment || 'tfplan' }}.tfplan # Default to tfplan.tfplan
+      
+      # For backend DO spaces S3 state access
+      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_S3_SECRET_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_S3_ACCESS_KEY_ID }}
+      
+      # For DO spaces access (not TF backend)
+      SPACES_ACCESS_KEY_ID: ${{secrets.SPACES_ACCESS_KEY_ID}}
+      SPACES_SECRET_ACCESS_KEY: ${{secrets.SPACES_SECRET_ACCESS_KEY}}
+      
+      # For DO access
+      DIGITALOCEAN_TOKEN: ${{secrets.DIGITALOCEAN_TOKEN}}
+
+      # Optionally for use with GitHub config
+      GITHUB_OWNER: ${{ secrets.GH_OWNER }}
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory || './' }}
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Terraform setup, init, format, validate
+    # On every run
+    - name: Terraform Init
+      id: init
+      uses: vincishq/github-action-terraform-init@v1
+      with:
+        cloud-provider: "S3"
+        backend-storage-name: ${{ secrets.TF_STATE_S3_BUCKET_NAME }}
+    
+    # Terraform plan and optional upload artifact
+    # On pull requests where using plan output and all requests when not using plan output
+    - name: Terraform Plan
+      if: (github.event_name == 'pull_request' && env.use-tfplan-output == 'true') || env.use-tfplan-output == 'false'
+      id: plan
+      uses: vincishq/github-action-terraform-plan@v1
+      with:
+        tfplan-name: ${{ env.tfplan-file-name }}
+        output-tfplan: ${{ env.use-tfplan-output }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        init-outcome: ${{ steps.init.outputs.init-outcome }}
+
+    # Terraform apply
+    # On "main" branch
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main'
+      id: apply
+      uses: vincishq/github-action-terraform-apply@v1
+      with:
+        tfplan-name: ${{ env.tfplan-file-name }}
+        use-tfplan-artifact: ${{ env.use-tfplan-output }}
