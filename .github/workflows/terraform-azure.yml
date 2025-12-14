@@ -88,4 +88,5 @@ jobs:
       uses: vincishq/github-action-terraform-apply@v1.0.0
       with:
         tfplan-name: ${{ env.tfplan-file-name }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         use-tfplan-artifact: ${{ env.use-tfplan-output }}
