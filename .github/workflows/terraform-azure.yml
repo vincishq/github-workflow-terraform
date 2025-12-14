@@ -63,7 +63,7 @@ jobs:
     # On every run
     - name: Terraform Init
       id: init
-      uses: vincishq/github-action-terraform-init@v1
+      uses: vincishq/github-action-terraform-init@v1.0.0
       with:
         cloud-provider: "Azure"
         backend-storage-name: ${{ secrets.TF_STATE_STORAGE_ACCOUNT_NAME }}
@@ -73,7 +73,7 @@ jobs:
     - name: Terraform Plan
       if: (github.event_name == 'pull_request' && env.use-tfplan-output == 'true') || env.use-tfplan-output == 'false'
       id: plan
-      uses: vincishq/github-action-terraform-plan@v1
+      uses: vincishq/github-action-terraform-plan@v1.0.0
       with:
         tfplan-name: ${{ env.tfplan-file-name }}
         output-tfplan: ${{ env.use-tfplan-output }}
@@ -85,7 +85,7 @@ jobs:
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main'
       id: apply
-      uses: vincishq/github-action-terraform-apply@v1
+      uses: vincishq/github-action-terraform-apply@v1.0.0
       with:
         tfplan-name: ${{ env.tfplan-file-name }}
         use-tfplan-artifact: ${{ env.use-tfplan-output }}
