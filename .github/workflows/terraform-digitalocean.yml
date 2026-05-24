@@ -47,8 +47,8 @@ jobs:
       tfplan-file-name: ${{ inputs.environment || 'tfplan' }}.tfplan # Default to tfplan.tfplan
       
       # For backend DO spaces S3 state access
-      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_S3_SECRET_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_S3_ACCESS_KEY_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_S3_SECRET_ACCESS_KEY }}
       
       # For DO spaces access (not TF backend)
       SPACES_ACCESS_KEY_ID: ${{secrets.SPACES_ACCESS_KEY_ID}}
